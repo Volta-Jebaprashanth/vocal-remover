@@ -6,6 +6,10 @@ QWidget {
     font-size: 13px;
 }
 
+QLabel {
+    background-color: transparent;
+}
+
 QLabel#headerTitle {
     font-size: 22px;
     font-weight: 600;
