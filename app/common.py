@@ -22,6 +22,19 @@ def default_model_path() -> str:
     return resource_path("pretrained_models")
 
 
+def ytdlp_cache_dir() -> str:
+    """Where the standalone yt-dlp.exe used for the YouTube features is cached.
+
+    Deliberately NOT bundled into the build, unlike ffmpeg -- YouTube changes its
+    internals often enough to break yt-dlp's extractor, and the yt-dlp project ships
+    fixed builds quickly (often within a day). Fetching it at runtime into a
+    writable per-user location (same reasoning as default_model_path() above) means
+    a breakage can self-heal on next launch by re-fetching, instead of requiring a
+    full app rebuild + reinstall every time YouTube changes something."""
+    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    return os.path.join(base, "VocalRemover", "yt-dlp")
+
+
 def configure_environment() -> None:
     """Must run before spleeter/tensorflow is imported anywhere, in every process
     (GUI process and worker subprocess alike)."""
@@ -32,6 +45,18 @@ def configure_environment() -> None:
         sys.stdout = open(os.devnull, "w")
     if sys.stderr is None:
         sys.stderr = open(os.devnull, "w")
+
+    # When stdout/stderr are redirected pipes rather than a real console (true for
+    # every worker subprocess, since its output is piped back to the GUI process),
+    # Python falls back to the OS's ANSI codepage (cp1252 here) instead of UTF-8.
+    # A YouTube-sourced filename can contain non-ASCII characters (e.g. yt-dlp's own
+    # "｜" substitution for a Windows-illegal "|" in a video title), and any print/
+    # log call touching that path then crashes with
+    # "UnicodeEncodeError: 'charmap' codec can't encode character ...". Forcing
+    # UTF-8 here, in every process, avoids that regardless of what ends up printed.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="backslashreplace")
 
     os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
     os.environ.setdefault("MODEL_PATH", default_model_path())

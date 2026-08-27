@@ -187,6 +187,21 @@ QPushButton#queueRemoveButton:hover {
     border: none;
 }
 
+QPushButton#stopButton {
+    background: transparent;
+    border: none;
+    color: #6f7290;
+    font-weight: 700;
+    padding: 0;
+    border-radius: 11px;
+}
+
+QPushButton#stopButton:hover {
+    background-color: #3a2a3a;
+    color: #ff6b6b;
+    border: none;
+}
+
 QPushButton#advancedToggle {
     background: transparent;
     border: none;
@@ -273,6 +288,49 @@ QLabel#resultError {
 QLabel#resultDetail {
     color: #8b8ea3;
     font-size: 11px;
+}
+
+QTabWidget::pane {
+    border: none;
+    background-color: #14151f;
+}
+
+QTabBar::tab {
+    background-color: #1c1e2b;
+    color: #8b8ea3;
+    border: 1px solid #262a3d;
+    border-bottom: none;
+    padding: 10px 18px;
+    font-weight: 600;
+}
+
+QTabBar::tab:selected {
+    background-color: #14151f;
+    color: #ffffff;
+    border: 1px solid #3d4160;
+    border-bottom: none;
+}
+
+QTabBar::tab:hover {
+    color: #e6e6f0;
+}
+
+QRadioButton {
+    color: #e6e6f0;
+    spacing: 6px;
+}
+
+QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    border: 1px solid #3d4160;
+    background-color: #1c1e2b;
+}
+
+QRadioButton::indicator:checked {
+    background-color: #7c5cff;
+    border: 1px solid #7c5cff;
 }
 
 QLabel#memoryWarning {

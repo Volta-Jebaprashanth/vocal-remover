@@ -92,6 +92,10 @@ class FileQueue(QWidget):
         self.list_widget.addItem(item)
         self.list_widget.setItemWidget(item, row)
 
+    def remove_paths(self, paths) -> None:
+        for path in paths:
+            self._remove_path(path)
+
     def _remove_path(self, path: str) -> None:
         if path in self._paths:
             self._paths.remove(path)
