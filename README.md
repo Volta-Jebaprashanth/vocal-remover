@@ -10,13 +10,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Volta-Jebaprashanth/audio-background-remover/releases/latest/download/VocalRemoverSetup-1.0.0.exe">
+  <a href="https://github.com/Volta-Jebaprashanth/audio-background-remover/releases/latest/download/VocalRemoverSetup-1.0.1.exe">
     <img src="https://img.shields.io/badge/Download-Windows-6f42c1?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows">
   </a>
 </p>
 
 <p align="center">
-  <b>➡️ <a href="https://github.com/Volta-Jebaprashanth/audio-background-remover/releases/latest/download/VocalRemoverSetup-1.0.0.exe">Download the latest installer (Windows)</a> ⬅️</b><br>
+  <b>➡️ <a href="https://github.com/Volta-Jebaprashanth/audio-background-remover/releases/latest/download/VocalRemoverSetup-1.0.1.exe">Download the latest installer (Windows)</a> ⬅️</b><br>
   <sub>Free, offline after first use, nothing to configure. See <a href="#-installation">Installation</a> for details.</sub>
 </p>
 
@@ -48,7 +48,7 @@
 
 ## 📥 Installation
 
-1. **[Download the installer](https://github.com/Volta-Jebaprashanth/audio-background-remover/releases/latest/download/VocalRemoverSetup-1.0.0.exe)** (or grab it from the [Releases page](https://github.com/Volta-Jebaprashanth/audio-background-remover/releases/latest)).
+1. **[Download the installer](https://github.com/Volta-Jebaprashanth/audio-background-remover/releases/latest/download/VocalRemoverSetup-1.0.1.exe)** (or grab it from the [Releases page](https://github.com/Volta-Jebaprashanth/audio-background-remover/releases/latest)).
 2. Run it. It installs for your user only, so **no admin prompt** — just a Windows SmartScreen "unknown publisher" warning the first time (the app isn't code-signed), which is safe to click through.
 3. Launch **Vocal Remover** from the Start Menu (or desktop shortcut, if you checked that box).
 4. Drop in a song and hit **Remove Vocals**. The first time you use a given mode (2/4/5-stem), it downloads that AI model over the internet — after that, it's fully offline.
@@ -91,7 +91,7 @@ cd app
 ### Building the installer
 
 ```powershell
-.\scripts\release.ps1 -Version 1.0.0
+.\scripts\release.ps1 -Version 1.0.1
 ```
 
 One command: builds the onedir PyInstaller bundle, compiles the Inno Setup installer, tags the repo, and publishes it as a GitHub Release. Requires Inno Setup and the GitHub CLI (`gh`, already authenticated).

@@ -10,12 +10,6 @@ QLabel {
     background-color: transparent;
 }
 
-QLabel#headerTitle {
-    font-size: 22px;
-    font-weight: 600;
-    color: #ffffff;
-}
-
 QLabel#headerSubtitle {
     font-size: 12px;
     color: #8b8ea3;

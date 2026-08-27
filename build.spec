@@ -30,6 +30,11 @@ datas += collect_data_files("spleeter")
 for exe_name in ("ffmpeg.exe", "ffprobe.exe"):
     datas.append((os.path.join(app_dir, "ffmpeg", exe_name), "ffmpeg"))
 
+# App icon + in-UI header logo (see ui/main_window.py, loaded via common.resource_path).
+app_icon = os.path.join(app_dir, "assets", "icon.ico")
+for asset_name in ("icon.ico", "logo-light.png"):
+    datas.append((os.path.join(app_dir, "assets", asset_name), "assets"))
+
 a = Analysis(
     [os.path.join(app_dir, "main.py")],
     pathex=[app_dir],
@@ -67,6 +72,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=app_icon,
 )
 
 coll = COLLECT(

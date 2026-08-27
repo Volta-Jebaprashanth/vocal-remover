@@ -1,7 +1,7 @@
 import os
 
-from PyQt5.QtCore import QUrl
-from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtGui import QDesktopServices, QIcon, QPixmap
 from PyQt5.QtWidgets import (
     QFileDialog,
     QFrame,
@@ -16,11 +16,16 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from common import resource_path
 from core.separation_controller import SeparationController
 from ui.advanced_panel import AdvancedPanel
 from ui.drop_zone import AUDIO_EXTENSIONS, DropZone
 from ui.file_queue import FileQueue
 from ui.styles import STYLESHEET
+
+# Header logo height. The old "Vocal Remover" QLabel#headerTitle text was 22px font,
+# but that reads too small as an image -- sized up for visual presence in the header.
+HEADER_LOGO_HEIGHT = 112
 
 AUDIO_FILE_FILTER = "Audio files (*.mp3 *.wav *.flac *.m4a *.aac *.ogg *.wma)"
 
@@ -31,6 +36,7 @@ class MainWindow(QMainWindow):
         self.controller = None
 
         self.setWindowTitle("Vocal Remover — Background Track Extractor")
+        self.setWindowIcon(QIcon(resource_path("assets", "icon.ico")))
         self.setMinimumSize(600, 640)
         self.resize(600, 760)
         self.setStyleSheet(STYLESHEET)
@@ -55,11 +61,14 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(28, 28, 28, 28)
         root.setSpacing(16)
 
-        title = QLabel("Vocal Remover")
-        title.setObjectName("headerTitle")
+        logo = QLabel()
+        logo_pixmap = QPixmap(resource_path("assets", "logo-light.png"))
+        logo.setPixmap(
+            logo_pixmap.scaledToHeight(HEADER_LOGO_HEIGHT, Qt.SmoothTransformation)
+        )
         subtitle = QLabel("Strip the vocals out of any song and keep the instrumental.")
         subtitle.setObjectName("headerSubtitle")
-        root.addWidget(title)
+        root.addWidget(logo)
         root.addWidget(subtitle)
 
         self.drop_zone = DropZone()
