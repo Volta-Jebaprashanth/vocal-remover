@@ -23,6 +23,18 @@ def _unique_path(path: str) -> str:
     return candidate
 
 
+def _model_is_cached(stem_mode: str) -> bool:
+    """Mirrors spleeter's own ModelProvider.get() check (a `.probe` file written
+    after a successful download) so the UI can tell the user *before* construction
+    whether this is going to be a fast local load or a first-time internet download.
+    Note: the -16kHz "fast" variants share the same on-disk checkpoint as their
+    standard counterpart (same `model_dir` in spleeter's resource configs), so
+    `stem_mode` alone (without the -16kHz suffix) is the right thing to check."""
+    model_path = os.environ.get("MODEL_PATH", "pretrained_models")
+    probe = os.path.join(model_path, stem_mode, ".probe")
+    return os.path.exists(probe)
+
+
 def run_job(job_path: str) -> None:
     """Handles exactly one input file. One process handles exactly one file (see
     core/separation_controller.py) so that a crash on a problematic file (typically
@@ -45,7 +57,17 @@ def run_job(job_path: str) -> None:
         from spleeter.separator import Separator
 
         descriptor = f"spleeter:{stem_mode}{'-16kHz' if fast else ''}"
-        emit("status", text=f"Loading {stem_mode} model...")
+        if _model_is_cached(stem_mode):
+            emit("status", text=f"Loading {stem_mode} model...")
+        else:
+            emit(
+                "status",
+                text=(
+                    f"Downloading the {stem_mode} model (first time only, ~100-200MB) — "
+                    "make sure you're connected to the internet. This can take a few minutes."
+                ),
+                downloading=True,
+            )
         # multiprocess=False: avoids spawning extra child processes inside a
         # frozen/windowed exe (spleeter's own Pool-based path is fragile there).
         separator = Separator(descriptor, MWF=mwf, multiprocess=False)

@@ -8,6 +8,20 @@ def resource_path(*parts: str) -> str:
     return os.path.join(base, *parts)
 
 
+def default_model_path() -> str:
+    """Where spleeter should cache downloaded models.
+
+    In a frozen build the exe typically lives under Program Files (or wherever the
+    installer put it), which a standard, non-elevated user cannot write to -- and
+    since models are no longer bundled into the build (see build.spec), this *must*
+    be writable so spleeter's own download-on-first-use can succeed. Dev runs from
+    source keep using the local app/pretrained_models folder that's already
+    populated, so testing doesn't re-download anything."""
+    if getattr(sys, "frozen", False):
+        return os.path.join(os.environ["LOCALAPPDATA"], "VocalRemover", "pretrained_models")
+    return resource_path("pretrained_models")
+
+
 def configure_environment() -> None:
     """Must run before spleeter/tensorflow is imported anywhere, in every process
     (GUI process and worker subprocess alike)."""
@@ -20,7 +34,7 @@ def configure_environment() -> None:
         sys.stderr = open(os.devnull, "w")
 
     os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
-    os.environ.setdefault("MODEL_PATH", resource_path("pretrained_models"))
+    os.environ.setdefault("MODEL_PATH", default_model_path())
     os.environ["PATH"] = resource_path("ffmpeg") + os.pathsep + os.environ.get("PATH", "")
 
 

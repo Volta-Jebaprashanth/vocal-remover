@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-A Windows desktop app (PyQt5 UI) that separates a song into stems using Spleeter (Deezer's source-separation library) — from simple vocal removal (keep the instrumental) up to full 5-stem separation (vocals/drums/bass/piano/other), with batch processing, quality presets, and format choice. Target deliverable is a single-file, offline-capable `.exe` built with PyInstaller — end users should need nothing installed (no Python, no ffmpeg, no internet for the model).
+A Windows desktop app (PyQt5 UI) that separates a song into stems using Spleeter (Deezer's source-separation library) — from simple vocal removal (keep the instrumental) up to full 5-stem separation (vocals/drums/bass/piano/other), with batch processing, quality presets, and format choice. Distributed as an Inno Setup installer built from a PyInstaller **onedir** build (see "Packaging & distribution" below) — end users need nothing pre-installed (no Python, no ffmpeg), and separation models download automatically the first time each mode is used.
 
-**Current status:** the app runs correctly from source (`app/main.py`). PyInstaller packaging into the final onefile `.exe` has **not** been done yet — no `.spec` file exists and `pyinstaller` is not yet installed in `venv`. That's the next milestone.
+**Current status:** fully working end to end — dev app, onedir build, installer, and a one-command release script have all been built and manually verified (installed via the compiled installer, launched, confirmed working).
 
 ## Critical environment constraint
 
@@ -30,6 +30,9 @@ All commands run from the repo root, using the project venv (not system Python):
 cd app && "../venv/Scripts/python.exe" main.py
 # or windowed, no console:
 cd app && "../venv/Scripts/pythonw.exe" main.py
+
+# build + package + publish a release (see "Packaging & distribution" below)
+.\scripts\release.ps1 -Version 1.0.0
 ```
 
 There is no test suite and no linter configured yet. Ad-hoc verification during development has been done by driving `core.separation_controller.SeparationController` directly from a throwaway script (construct it, connect signals, call `.start(job)`, run a `QEventLoop`) rather than clicking through the UI — see git history / session logs for examples.
@@ -63,12 +66,18 @@ If you ever need to add a second concurrent separation (e.g. a "cancel and start
 
 `resource_path()` resolves bundled files (ffmpeg binaries, pretrained models) relative to `sys._MEIPASS` when frozen by PyInstaller, or relative to `app/` when run from source. Any new bundled asset must be looked up through this helper, not a hardcoded relative path.
 
-### Bundled, offline-capable dependencies
+### Bundled dependencies vs. download-on-first-use models
 
-- `app/ffmpeg/ffmpeg.exe` + `app/ffmpeg/ffprobe.exe` — spleeter's `FFMPEGProcessAudioAdapter` shells out to both binaries (not just `ffmpeg`); missing either raises `SpleeterError: ... binary not found`. Sourced from the gyan.dev "essentials" static build. Confirmed working for `wav`, `mp3` (libmp3lame), and implicitly `flac` (native ffmpeg encoder, untested but standard).
-- `app/pretrained_models/` — **all six** spleeter model variants are pre-downloaded here so the packaged exe works fully offline and every UI option actually works: `2stems`, `2stems-16kHz`, `4stems`, `4stems-16kHz`, `5stems`, `5stems-16kHz`. Each populates itself the first time it's used with `MODEL_PATH` pointed at this folder (spleeter downloads lazily from `github.com/deezer/spleeter` releases on first use of a given descriptor, then reuses it) — **but each descriptor must be triggered in its own separate process** the first time, per the one-`Separator`-per-process constraint above; don't loop over descriptors in one Python session to populate this folder.
+- `app/ffmpeg/ffmpeg.exe` + `app/ffmpeg/ffprobe.exe` — spleeter's `FFMPEGProcessAudioAdapter` shells out to both binaries (not just `ffmpeg`); missing either raises `SpleeterError: ... binary not found`. Sourced from the gyan.dev "essentials" static build. Confirmed working for `wav`, `mp3` (libmp3lame), and implicitly `flac` (native ffmpeg encoder, untested but standard). Always bundled (spleeter can't fetch these itself), gitignored (large binaries) — a fresh clone needs to re-download it before the app or a build will work.
+- **Pretrained models are deliberately NOT bundled** — bundling all 6 variants made the onefile build ~962MB and the onedir build ~1.5GB. Instead, spleeter downloads each model itself the first time its mode is used (its own `ModelProvider.get()` checks for a `.probe` file and fetches from GitHub if missing), which shrinks the shipped build a lot at the cost of needing internet once per stem-count mode. `app/pretrained_models/` still exists and is used as the model cache **when running from source** (already populated there, so dev/testing never re-downloads) — see `common.default_model_path()`.
+- `common.default_model_path()` — in a **frozen** build this points `MODEL_PATH` at `%LOCALAPPDATA%\VocalRemover\pretrained_models` instead of a folder next to the exe. This matters because the installer installs per-user (see below) but even so, a folder beside the exe is the wrong place to be writing downloaded files at runtime on general principle — `%LOCALAPPDATA%` is the correct writable, per-user location regardless of where the app itself is installed.
+- `worker_main._model_is_cached()` mirrors spleeter's own `.probe`-file check *before* constructing `Separator`, so the UI can tell the user up front whether this run is a fast local load or a first-time internet download, rather than just looking hung. The status event carries a `downloading: bool` flag (`SeparationController.status_changed` is `(str, bool)`) that `MainWindow` uses to style the message differently (`QLabel#statusLabel[state="downloading"]` in `styles.py`). Note the `-16kHz` "fast" variants share the exact same on-disk checkpoint as their standard counterpart (identical `model_dir` in spleeter's resource configs, confirmed by diffing `4stems.json` vs `4stems-16kHz.json`) — so the cache check and the download are keyed on `stem_mode` alone, never the `-16kHz` suffix. There are really only 3 distinct downloadable models (`2stems`/`4stems`/`5stems`), not 6.
 
-Both `app/ffmpeg/` and `app/pretrained_models/` are gitignored (large binaries) — a fresh clone needs to re-download/re-populate them before the app or a PyInstaller build will work.
+### Packaging & distribution
+
+- `build.spec` — PyInstaller spec, **onedir** (not onefile). Onefile re-extracts its entire payload to a fresh `%TEMP%` dir on *every launch*; with TensorFlow bundled that was a 30-60s+ startup tax on every run. Onedir runs directly from an already-unpacked folder — near-instant startup — at the cost of shipping a folder instead of a single file, which `installer.iss` papers over for the end user. Spec file is named `build.spec` (not `<appname>.spec`), which is why PyInstaller's intermediate work directory is `build/build/` rather than `build/VocalRemover/` — cosmetic, not a bug.
+- `installer.iss` — Inno Setup script. Installs **per-user** (`PrivilegesRequired=lowest`, to `{localappdata}\Programs\VocalRemover`) rather than to Program Files, specifically so an unsigned installer doesn't also need a UAC elevation prompt on top of the SmartScreen "unknown publisher" warning it'll already show (no code-signing cert — not worth the cost for this project). Compile with `ISCC.exe /DMyAppVersion=<version> installer.iss` — **options must come before the script filename**, and if invoking from Git Bash, a leading `/D...` argument gets mangled by MSYS path conversion (looks like "you may not specify more than one script filename"); run it from PowerShell instead, or `MSYS_NO_PATHCONV=1`. Solid LZMA2 compression of the ~1.5GB onedir output takes a genuinely long time (~10 minutes observed) — this is expected, not a hang; if impatient, check the child process's accumulated CPU time (e.g. `Get-Process -Id <pid> | Select CPU`) rather than wall-clock file size polling.
+- `scripts/release.ps1` — one command (`.\scripts\release.ps1 -Version 1.0.0`) that cleans `build`/`dist`, runs the PyInstaller onedir build, compiles the installer, tags the repo (`vX.Y.Z`), pushes the tag, and runs `gh release create` to publish the tagged installer as a GitHub Release asset. Requires Inno Setup and the GitHub CLI (`gh`) installed, and `gh auth login` completed once beforehand (interactive browser flow — can't be scripted/automated).
 
 ### UI structure
 

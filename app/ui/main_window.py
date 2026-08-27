@@ -214,7 +214,9 @@ class MainWindow(QMainWindow):
         }
 
         self.controller = SeparationController(self)
-        self.controller.status_changed.connect(lambda msg: self._set_status(msg))
+        self.controller.status_changed.connect(
+            lambda msg, downloading: self._set_status(msg, state="downloading" if downloading else "normal")
+        )
         self.controller.file_started.connect(self._on_file_started)
         self.controller.file_done.connect(self._on_file_done)
         self.controller.file_failed.connect(self._on_file_failed)

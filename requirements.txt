@@ -2,3 +2,4 @@ PyQt5
 spleeter
 numpy<2
 pyinstaller
+pyinstaller-hooks-contrib

@@ -31,7 +31,7 @@ class SeparationController(QObject):
        still runs, instead of silently losing the whole batch.
     """
 
-    status_changed = pyqtSignal(str)
+    status_changed = pyqtSignal(str, bool)  # text, is_downloading
     file_started = pyqtSignal(str, int, int)  # filename, index, total
     file_done = pyqtSignal(str, list)  # filename, output_paths
     file_failed = pyqtSignal(str, str)  # filename, error
@@ -110,7 +110,7 @@ class SeparationController(QObject):
 
         kind = event.get("event")
         if kind == "status":
-            self.status_changed.emit(event.get("text", ""))
+            self.status_changed.emit(event.get("text", ""), event.get("downloading", False))
         elif kind == "file_done":
             self._current_file_reported = True
             self.file_done.emit(self._current_filename, event.get("outputs", []))

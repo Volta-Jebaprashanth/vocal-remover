@@ -140,6 +140,11 @@ QLabel#statusLabel[state="success"] {
     color: #4ade80;
 }
 
+QLabel#statusLabel[state="downloading"] {
+    color: #5cb8ff;
+    font-weight: 600;
+}
+
 QPushButton#linkButton {
     background: transparent;
     border: none;
